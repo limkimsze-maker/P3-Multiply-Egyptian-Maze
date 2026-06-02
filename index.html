@@ -1335,6 +1335,232 @@
   }
 }
 
+
+/* ===== Scroll fix when Place Value Mat is shown ===== */
+#modalShade{
+  overflow:hidden !important;
+}
+#algoModal{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+  overscroll-behavior:contain !important;
+  touch-action:pan-y !important;
+}
+#algoModal .workGrid,
+#algoModal .darkCard,
+#algoModal #pvCard,
+#algoModal #matHost{
+  touch-action:pan-y !important;
+}
+#algoModal button,
+#algoModal input,
+#algoModal .keyBtn,
+#algoModal .pillBtn,
+#floatingMatToggle{
+  touch-action:manipulation !important;
+}
+@media (pointer:coarse), (max-width:980px), (max-height:850px){
+  #algoModal{
+    height:calc(var(--vh, 1vh) * 100) !important;
+    max-height:calc(var(--vh, 1vh) * 100) !important;
+    padding-bottom:calc(92px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  .workGrid:not(.matHidden){
+    padding-bottom:80px !important;
+  }
+  #pvCard{
+    max-height:none !important;
+  }
+}
+
+
+/* ===== FINAL FIX: make the quiz page itself scrollable on Fold / iOS / Android =====
+   Earlier versions made #algoModal the scroll box, but the global touch-action:none
+   and fixed-height inner panel can block drag scrolling on Samsung Internet/Chrome custom tabs.
+   This makes the overlay (#modalShade) the scroll container instead. */
+#modalShade{
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  align-items:flex-start !important;
+  justify-content:center !important;
+  -webkit-overflow-scrolling:touch !important;
+  overscroll-behavior:contain !important;
+  touch-action:pan-y !important;
+}
+#modalShade.showScroll,
+#modalShade[style*="flex"]{
+  overflow-y:auto !important;
+}
+#algoModal{
+  height:auto !important;
+  min-height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+  margin:0 auto !important;
+  padding-bottom:calc(150px + env(safe-area-inset-bottom,0px)) !important;
+  touch-action:pan-y !important;
+}
+#algoModal,
+#algoModal *{
+  touch-action:pan-y !important;
+}
+#algoModal button,
+#algoModal input,
+#algoModal .keyBtn,
+#algoModal .pillBtn,
+#floatingMatToggle{
+  touch-action:manipulation !important;
+}
+#workGrid,
+.workGrid,
+#pvCard,
+#matHost,
+.darkCard{
+  overflow:visible !important;
+}
+@media (pointer:coarse), (max-width:980px), (max-height:850px){
+  #modalShade{
+    height:calc(var(--vh, 1vh) * 100) !important;
+    max-height:calc(var(--vh, 1vh) * 100) !important;
+    padding:0 7px calc(105px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  #algoModal{
+    width:100% !important;
+    height:auto !important;
+    min-height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    border-radius:0 !important;
+    padding:7px 0 calc(150px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  .quizBar{
+    position:sticky !important;
+    top:0 !important;
+    z-index:75 !important;
+  }
+  .floatingMatToggle{
+    z-index:90 !important;
+  }
+}
+
+
+/* ===== REAL PAGE SCROLL MODE for Android/Fold/iOS browser bars ===== */
+html.quizPageOpen,
+body.quizPageOpen{
+  height:auto !important;
+  min-height:100% !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior:contain !important;
+  touch-action:pan-y !important;
+}
+body.quizPageOpen #gameWrap,
+body.quizPageOpen #topHUD,
+body.quizPageOpen #centerDot,
+body.quizPageOpen #helpCard,
+body.quizPageOpen #buttonsTopRight,
+body.quizPageOpen #prompt,
+body.quizPageOpen #mobileControls,
+body.quizPageOpen #messageBox{
+  display:none !important;
+}
+#modalShade.pageScrollMode{
+  position:absolute !important;
+  inset:auto 0 auto 0 !important;
+  top:0 !important;
+  left:0 !important;
+  right:0 !important;
+  bottom:auto !important;
+  width:100% !important;
+  min-height:calc(var(--vh, 1vh) * 100) !important;
+  height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+  display:block !important;
+  align-items:initial !important;
+  justify-content:initial !important;
+  padding:0 7px calc(190px + env(safe-area-inset-bottom,0px)) !important;
+  touch-action:pan-y !important;
+}
+#modalShade.pageScrollMode #algoModal{
+  position:relative !important;
+  width:100% !important;
+  max-width:760px !important;
+  height:auto !important;
+  min-height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+  margin:0 auto !important;
+  padding:7px 0 calc(190px + env(safe-area-inset-bottom,0px)) !important;
+  border-radius:0 !important;
+  border:0 !important;
+  touch-action:pan-y !important;
+}
+#modalShade.pageScrollMode #algoModal,
+#modalShade.pageScrollMode #algoModal *{
+  touch-action:pan-y !important;
+}
+#modalShade.pageScrollMode button,
+#modalShade.pageScrollMode input,
+#modalShade.pageScrollMode .keyBtn,
+#modalShade.pageScrollMode .pillBtn,
+#floatingMatToggle,
+#floatingCheckBtn{
+  touch-action:manipulation !important;
+}
+#modalShade.pageScrollMode .workGrid,
+#modalShade.pageScrollMode .darkCard,
+#modalShade.pageScrollMode #pvCard,
+#modalShade.pageScrollMode #matHost{
+  overflow:visible !important;
+}
+#modalShade.pageScrollMode .quizBar{
+  position:sticky !important;
+  top:0 !important;
+  z-index:75 !important;
+}
+.floatingCheckBtn{
+  position:fixed;
+  right:10px;
+  bottom:calc(72px + env(safe-area-inset-bottom,0px));
+  z-index:91;
+  display:none;
+  border:0;
+  border-radius:999px;
+  padding:12px 18px;
+  font-family:inherit;
+  font-size:15px;
+  font-weight:1000;
+  color:#062f14;
+  background:linear-gradient(180deg,#c8ffd6,#50c878);
+  box-shadow:0 4px 0 #15803d,0 10px 20px rgba(0,0,0,.30);
+  touch-action:manipulation;
+}
+.floatingCheckBtn.next{
+  color:#2b1705;
+  background:linear-gradient(180deg,#ffe290,#d9952b);
+  box-shadow:0 4px 0 #7a4913,0 10px 20px rgba(0,0,0,.30);
+}
+.floatingCheckBtn:active{
+  transform:translateY(2px);
+  box-shadow:0 2px 0 #15803d,0 6px 14px rgba(0,0,0,.24);
+}
+@media(max-width:430px){
+  .floatingMatToggle{
+    left:8px !important;
+    bottom:calc(62px + env(safe-area-inset-bottom,0px)) !important;
+    padding:10px 12px !important;
+    font-size:13px !important;
+  }
+  .floatingCheckBtn{
+    right:8px;
+    bottom:calc(62px + env(safe-area-inset-bottom,0px));
+    padding:10px 14px;
+    font-size:13px;
+  }
+}
+
 </style>
 </head>
 
@@ -1381,6 +1607,7 @@
   </div>
 
   <button id="floatingMatToggle" class="floatingMatToggle" type="button">Show Mat</button>
+  <button id="floatingCheckBtn" class="floatingCheckBtn" type="button">Check</button>
 
   <div id="modalShade">
     <div id="algoModal">
@@ -1849,14 +2076,31 @@
     }
 
     function openPuzzle(){
-      modalShade.style.display = "flex";
+      document.documentElement.classList.add("quizPageOpen");
+      document.body.classList.add("quizPageOpen");
+      modalShade.style.display = "block";
+      modalShade.classList.add("showScroll");
+      modalShade.classList.add("pageScrollMode");
       clearFeedback();
       hideHint();
       if(isCompactQuizView()) matVisible = false;
       renderAll();
+      window.scrollTo(0,0);
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
       setTimeout(()=>setActiveEntry(document.getElementById("currentDigitInput")),60);
     }
-    function closePuzzle(){ modalShade.style.display = "none"; const b = document.getElementById("floatingMatToggle"); if(b) b.style.display = "none"; }
+    function closePuzzle(){
+      modalShade.style.display = "none";
+      modalShade.classList.remove("showScroll");
+      modalShade.classList.remove("pageScrollMode");
+      document.documentElement.classList.remove("quizPageOpen");
+      document.body.classList.remove("quizPageOpen");
+      const b = document.getElementById("floatingMatToggle");
+      if(b) b.style.display = "none";
+      const c = document.getElementById("floatingCheckBtn");
+      if(c) c.style.display = "none";
+    }
     document.getElementById("btnClosePuzzle").addEventListener("click", closePuzzle);
 
     function openDoor(){
@@ -2221,6 +2465,11 @@
       $("progressText").textContent = `Question ${quiz.questionInStage} of ${QUESTIONS_PER_STAGE}`;
     }
 
+    function scrollQuizToTopSafe(){
+      const scroller = document.getElementById("modalShade");
+      if(scroller) scroller.scrollTop = 0;
+    }
+
     function renderAll(){
       updateHeader();
 
@@ -2230,7 +2479,14 @@
       const floatingMatToggle = $("floatingMatToggle");
       if(floatingMatToggle){
         floatingMatToggle.textContent = matVisible ? "Hide Mat" : "Show Mat";
-        floatingMatToggle.style.display = (modalShade.style.display === "flex") ? "block" : "none";
+        floatingMatToggle.style.display = (modalShade.style.display !== "none") ? "block" : "none";
+      }
+      const floatingCheckBtn = $("floatingCheckBtn");
+      if(floatingCheckBtn){
+        const completedQuestion = state.done >= steps.length;
+        floatingCheckBtn.textContent = completedQuestion ? (totalQuestionNumber() >= TOTAL_QUESTIONS ? "Open" : "Next") : "Check";
+        floatingCheckBtn.classList.toggle("next", completedQuestion);
+        floatingCheckBtn.style.display = (modalShade.style.display !== "none") ? "block" : "none";
       }
 
       const keypad = $("keypad");
@@ -2480,15 +2736,38 @@
       showHint(explainHint());
     });
     $("btnNextQuestion").addEventListener("click", nextQuizQuestion);
+    const floatingCheckBtn = $("floatingCheckBtn");
+    if(floatingCheckBtn){
+      floatingCheckBtn.addEventListener("click",()=>{
+        if(state.done >= steps.length) nextQuizQuestion();
+        else checkDigit();
+      });
+    }
     $("btnToggleMat").addEventListener("click",()=>{
       matVisible = !matVisible;
       renderAll();
+      const modal = $("modalShade");
+      if(modal){
+        if(matVisible) modal.scrollTo({top:0, behavior:"smooth"});
+        else {
+          const algoCard = $("algoHost");
+          if(algoCard) setTimeout(()=>algoCard.scrollIntoView({block:"start", behavior:"smooth"}), 40);
+        }
+      }
     });
     const floatingMatToggleBtn = $("floatingMatToggle");
     if(floatingMatToggleBtn){
       floatingMatToggleBtn.addEventListener("click",()=>{
         matVisible = !matVisible;
         renderAll();
+        const modal = window;
+        if(modal){
+          if(matVisible) window.scrollTo({top:0, behavior:"smooth"});
+          else {
+            const algoCard = $("algoHost");
+            if(algoCard) setTimeout(()=>algoCard.scrollIntoView({block:"start", behavior:"smooth"}), 40);
+          }
+        }
       });
     }
 
