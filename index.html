@@ -2448,6 +2448,61 @@ body.quizPageOpen #messageBox{
 
     @media(max-width:760px){.endingPhoto{max-height:32vh;border-radius:16px;margin-bottom:10px}}
 
+
+    #debugPanel{
+      position:fixed;
+      right:calc(12px + var(--safeRight));
+      top:calc(220px + var(--safeTop));
+      z-index:34;
+      display:none;
+      width:min(240px,88vw);
+      padding:12px;
+      border-radius:18px;
+      background:linear-gradient(180deg,rgba(42,24,8,.96),rgba(13,7,3,.96));
+      border:2px solid rgba(255,216,107,.72);
+      box-shadow:0 18px 46px rgba(0,0,0,.55),inset 0 0 24px rgba(255,216,107,.08);
+      color:#fff3c4;
+      font-family:inherit;
+    }
+    #debugPanel.show{display:block;}
+    .debugTitle{
+      font-weight:1000;
+      text-align:center;
+      margin-bottom:9px;
+      color:#fff0a8;
+      text-shadow:0 2px 0 #4b2b0a;
+    }
+    .debugGrid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:7px;
+    }
+    .debugGrid button,#debugCloseBtn{
+      border:none;
+      border-radius:12px;
+      padding:8px 7px;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:1000;
+      color:#2b1705;
+      background:linear-gradient(180deg,#fff0a8,#ffb33f);
+      box-shadow:0 3px 0 #7a4913,0 8px 15px rgba(0,0,0,.25);
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+    #debugCloseBtn{
+      width:100%;
+      margin-top:9px;
+      background:linear-gradient(180deg,#e7d3ad,#ad7a39);
+    }
+    @media(max-width:760px){
+      #debugPanel{
+        right:8px;
+        top:calc(214px + var(--safeTop));
+        width:min(230px,92vw);
+      }
+    }
+
 </style>
 </head>
 
@@ -2480,6 +2535,7 @@ body.quizPageOpen #messageBox{
           <li>Solve the multiplication algorithm. The object completes automatically.</li>
           <li>Collect all treasures and the <b>Key of Product</b>.</li>
           <li>Look out for framed multiplication jokes on the chamber walls.</li>
+          <li><b>Debug</b> is for teacher troubleshooting and chamber testing.</li>
         </ol>
         <div class="resetWarningBox compactReset">
           <b>Reset Progress</b><br>
@@ -2504,12 +2560,25 @@ body.quizPageOpen #messageBox{
   <div id="buttonsTopRight">
     <button class="smallBtn" id="soundBtn">🔊 Sound On</button>
     <button class="smallBtn" id="mainMenuBtn" type="button">☰ Main Menu</button>
+    <button class="smallBtn" id="debugBtn" type="button">🛠 Debug</button>
   </div>
 
   <div id="centerDot"></div>
   <div id="lightBeam" aria-hidden="true"></div>
   <div id="messageBox"></div>
 
+  <div id="debugPanel" aria-label="Debug chamber jump panel">
+    <div class="debugTitle">Debug Jump</div>
+    <div class="debugGrid">
+      <button data-debug-jump="c1">C1 Start</button>
+      <button data-debug-jump="c2">C2 Torch</button>
+      <button data-debug-jump="c3">C3 Scarab</button>
+      <button data-debug-jump="c4">C4 Bridge</button>
+      <button data-debug-jump="c5">C5 Villagers</button>
+      <button data-debug-jump="final">Final Door</button>
+    </div>
+    <button id="debugCloseBtn" type="button">Close</button>
+  </div>
 
   <div id="jewelCollection" aria-label="Jewel Collection">
     <div>Jewels</div>
@@ -2881,7 +2950,7 @@ const wrap = document.getElementById("gameWrap");
       door.mesh.position.y = startY;
 
       const begin = performance.now();
-      const duration = 1650;
+      const duration = 4950; // 3x slower so pupils can watch the door opening
 
       function easeOutCubic(t){
         return 1 - Math.pow(1 - t, 3);
@@ -5159,6 +5228,76 @@ function addTablet(){
     }
 
     
+
+    function jumpToDebugChamber(target){
+      stopDoorOpeningSound?.();
+      doorCinematicActive = false;
+      if(modalShade) closePuzzle();
+
+      const spots = {
+        c1:{x:0,y:1.65,z:5.6,ry:0,msg:"Debug: Starting Chamber"},
+        c2:{x:0,y:1.65,z:-10.0,ry:0,msg:"Debug: Torch Corridor"},
+        c3:{x:0,y:1.65,z:-24.0,ry:0,msg:"Debug: Scarab Chamber"},
+        c4:{x:0,y:1.65,z:-40.0,ry:0,msg:"Debug: Bridge Chamber"},
+        c5:{x:0,y:1.65,z:-72.5,ry:0,msg:"Debug: Villagers Hall"},
+        final:{x:0,y:1.65,z:-84.5,ry:0,msg:"Debug: Final Door"}
+      };
+      const s = spots[target] || spots.c1;
+
+      // Unlock required previous doors only for testing that chamber.
+      if(target==="c2" || target==="c3" || target==="c4" || target==="c5" || target==="final"){
+        doorOpen = true;
+        rubyVisible = true;
+        rubyCollected = true;
+      }
+      if(target==="c3" || target==="c4" || target==="c5" || target==="final"){
+        window.secondDoorOpen = true;
+        topazVisible = true;
+        topazCollected = true;
+      }
+      if(target==="c4" || target==="c5" || target==="final"){
+        window.thirdDoorOpen = true;
+        emeraldVisible = true;
+        emeraldCollected = true;
+      }
+      if(target==="c5" || target==="final"){
+        window.fourthDoorOpen = true;
+        sapphireVisible = true;
+        sapphireCollected = true;
+        window.fifthDoorOpen = true;
+      }
+      if(target==="final"){
+        restorationKeyVisible = true;
+        restorationKeyCollected = true;
+      }
+
+      camera.position.set(s.x,s.y,s.z);
+      camera.rotation.set(0,s.ry,0);
+      applyProgressVisuals();
+      updateInteraction();
+      updateJewelCollection();
+      showMessage(s.msg + ". This jump is for troubleshooting.");
+    }
+
+    const debugBtn = document.getElementById("debugBtn");
+    const debugPanel = document.getElementById("debugPanel");
+    const debugCloseBtn = document.getElementById("debugCloseBtn");
+    if(debugBtn && debugPanel){
+      debugBtn.addEventListener("click",()=>{
+        debugPanel.classList.toggle("show");
+      });
+      debugPanel.querySelectorAll("[data-debug-jump]").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          jumpToDebugChamber(btn.getAttribute("data-debug-jump"));
+          debugPanel.classList.remove("show");
+        });
+      });
+    }
+    if(debugCloseBtn && debugPanel){
+      debugCloseBtn.addEventListener("click",()=>debugPanel.classList.remove("show"));
+    }
+
+
     function updateAlgorithmButtonVisibility(){
       const modalOpen = !!(
         modalShade &&
