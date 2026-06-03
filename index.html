@@ -3495,6 +3495,24 @@ const wrap = document.getElementById("gameWrap");
       document.body.scrollTop = 0;
       document.documentElement.scrollTop = 0;
       window.scrollTo(0,0);
+
+      // Stop any held movement from the algorithm/mobile transition.
+      if(typeof moveKeys !== "undefined"){
+        Object.keys(moveKeys).forEach(k=>moveKeys[k]=false);
+      }
+      currentTarget = null;
+
+      const gameWrap = document.getElementById("gameWrap");
+      if(gameWrap){
+        gameWrap.style.display = "block";
+        gameWrap.style.visibility = "visible";
+      }
+      if(renderer && renderer.domElement){
+        renderer.domElement.style.display = "block";
+        renderer.domElement.style.width = "100%";
+        renderer.domElement.style.height = "100%";
+      }
+
       updateAlgorithmButtonVisibility();
       resize3DRendererSoon();
     }
@@ -3513,6 +3531,18 @@ const wrap = document.getElementById("gameWrap");
       requestAnimationFrame(doResize);
       setTimeout(doResize,80);
       setTimeout(doResize,260);
+    }
+
+    function startDoorSceneAfter3DStable(run){
+      force3DChamberMode();
+      resize3DRendererSoon();
+      requestAnimationFrame(()=>{
+        resize3DRendererSoon();
+        requestAnimationFrame(()=>{
+          resize3DRendererSoon();
+          setTimeout(run,30);
+        });
+      });
     }
 
     function setPlayerFloorView(x,z,ry=0){
@@ -3553,6 +3583,7 @@ const wrap = document.getElementById("gameWrap");
     }
 
     function showDoorOpeningScene(opts){
+      opts = opts || {};
       const {
         door,
         blocker,
@@ -3560,7 +3591,7 @@ const wrap = document.getElementById("gameWrap");
         cameraZ,
         message,
         onComplete
-      } = opts || {};
+      } = opts;
 
       if(!door || !door.mesh){
         if(blocker) blocker.active = false;
@@ -3568,66 +3599,70 @@ const wrap = document.getElementById("gameWrap");
         return;
       }
 
-      doorCinematicActive = true;
-      door.active = false;
-      if(blocker) blocker.active = false;
+      startDoorSceneAfter3DStable(()=>{
+        doorCinematicActive = true;
+        pendingFloorRestoreAfterDoorView = false;
+        door.active = false;
+        if(blocker) blocker.active = false;
 
-      // Default door-opening view stays unchanged.
-      // Torch Chamber door can request a direct floor-level view from Torch 1.
-      const directFloorView = !!opts.directFloorView;
-      const viewSideX = directFloorView ? -2.25 : 5.4;
-      const viewBackZ = directFloorView ? -9.8 : doorZ + 6.8;
-      const viewHeightY = directFloorView ? 1.65 : 2.9;
-      const targetY = directFloorView ? 1.75 : 1.85;
+        // Stable floor-level door-opening view.
+        // No high camera, no side screenshot view, no page-scroll state.
+        const viewX = Number.isFinite(opts.viewX) ? opts.viewX : 0;
+        const viewZ = Number.isFinite(cameraZ) ? cameraZ : (doorZ + 3.8);
+        const viewY = 1.65;
+        const targetY = 1.72;
 
-      camera.position.set(viewSideX, viewHeightY, viewBackZ);
-      faceCameraAt(0, targetY, doorZ);
+        camera.position.set(viewX, viewY, viewZ);
+        faceCameraAt(0, targetY, doorZ);
+        resize3DRendererSoon();
 
-      if(message) showMessage(message);
-      playDoorOpeningSound();
+        if(message) showMessage(message);
+        playDoorOpeningSound();
 
-      const closedY = 1.9;
-      const openY = 8.8;
-      const startY = Math.min(door.mesh.position.y || closedY, closedY);
-      door.mesh.position.y = startY;
+        const closedY = 1.9;
+        const openY = 8.8;
+        const startY = Math.min(door.mesh.position.y || closedY, closedY);
+        door.mesh.position.y = startY;
 
-      const begin = performance.now();
-      const duration = 4950; // 3x slower so pupils can watch the door opening
+        const begin = performance.now();
+        const duration = 4950; // current slow speed retained
 
-      function easeOutCubic(t){
-        return 1 - Math.pow(1 - t, 3);
-      }
-
-      function step(now){
-        const t = Math.min(1, (now - begin) / duration);
-        const eased = easeOutCubic(t);
-        door.mesh.position.y = startY + (openY - startY) * eased;
-
-        // Keep the angled overview and gently follow the rising door.
-        camera.position.set(viewSideX, viewHeightY, viewBackZ);
-        faceCameraAt(0, targetY + eased * 1.25, doorZ);
-
-        if(t < 1){
-          requestAnimationFrame(step);
-        }else{
-          door.mesh.position.y = openY;
-          stopDoorOpeningSound();
-          door.active = false;
-          if(blocker) blocker.active = false;
-          syncDoorBlockers();
-          doorCinematicActive = false;
-          if(opts.restoreAfterOpen){
-            setPlayerFloorView(opts.restoreAfterOpen.x, opts.restoreAfterOpen.z, opts.restoreAfterOpen.ry || 0);
-          }else{
-            pendingFloorRestoreAfterDoorView = true;
-            resize3DRendererSoon();
-            showMessage("Door opened. Touch the screen or move to return to floor level.");
-          }
-          if(typeof onComplete === "function") onComplete();
+        function easeOutCubic(t){
+          return 1 - Math.pow(1 - t, 3);
         }
-      }
 
-      requestAnimationFrame(step);
+        function step(now){
+          const t = Math.min(1, (now - begin) / duration);
+          const eased = easeOutCubic(t);
+
+          door.mesh.position.y = startY + (openY - startY) * eased;
+          camera.position.set(viewX, viewY, viewZ);
+          faceCameraAt(0, targetY, doorZ);
+
+          if(t < 1){
+            requestAnimationFrame(step);
+          }else{
+            door.mesh.position.y = openY;
+            stopDoorOpeningSound();
+            door.active = false;
+            if(blocker) blocker.active = false;
+            syncDoorBlockers();
+            doorCinematicActive = false;
+
+            const r = opts.restoreAfterOpen;
+            if(r){
+              setPlayerFloorView(r.x, r.z, r.ry || 0);
+            }else{
+              setPlayerFloorView(viewX, viewZ, 0);
+            }
+
+            if(typeof onComplete === "function") onComplete();
+            resize3DRendererSoon();
+          }
+        }
+
+        requestAnimationFrame(step);
+      });
     }
 
 
@@ -6264,7 +6299,7 @@ function addTablet(){
     }
 
     function movePlayer(dt){
-      if(doorCinematicActive || modalShade.style.display==="flex" || document.getElementById("endingPanel").style.display==="flex") return;
+      if(doorCinematicActive || modalShade.style.display!=="none" || document.getElementById("endingPanel").style.display==="flex") return;
       const lookSpeed = 1.8*dt;
       if(moveKeys.lookLeft) camera.rotation.y += lookSpeed;
       if(moveKeys.lookRight) camera.rotation.y -= lookSpeed;
@@ -6630,7 +6665,20 @@ function openPuzzle(){
     }
     document.getElementById("btnClosePuzzle").addEventListener("click", closePuzzle);
 
-        function openDoor(){
+    
+    function firstDoorPostOpenWatchdog(){
+      if(!doorOpen || !window.firstDoor || !window.rubyObj) return;
+      force3DChamberMode();
+      if(camera.position.z > -7.2 || camera.position.z < -12.4){
+        setPlayerFloorView(0,-5.4,0);
+      }
+      rubyVisible = true;
+      if(!rubyCollected) window.rubyObj.group.visible = true;
+      resize3DRendererSoon();
+      showMessage("Starting Chamber cleared! Walk forward into the Torch Corridor and collect the Ruby of Product.");
+    }
+
+    function openDoor(){
       if(doorOpen) return;
       doorOpen = true;
       if(window.firstDoorBlocker) window.firstDoorBlocker.active = false;
@@ -6646,9 +6694,9 @@ function openPuzzle(){
         onComplete: ()=>{
           rubyVisible = true;
           if(window.rubyObj) window.rubyObj.group.visible = true;
-          force3DChamberMode();
-          setPlayerFloorView(0,-5.4,0);
           showMessage("Starting Chamber cleared! Walk forward into the Torch Corridor and collect the Ruby of Product.");
+          setTimeout(firstDoorPostOpenWatchdog,120);
+          setTimeout(firstDoorPostOpenWatchdog,520);
           updateTorchGalleryProgression?.();
           saveProgress();
         }
@@ -6667,6 +6715,7 @@ function openPuzzle(){
         doorZ: -21,
         cameraZ: -17.2,
         directFloorView: true,
+        restoreAfterOpen: {x:0, z:-18.4, ry:0},
         message: "All 6 torches are lit. Watch the door open!",
         onComplete: ()=>{
           topazVisible = true;
@@ -6688,6 +6737,7 @@ function openPuzzle(){
         blocker: window.thirdDoorBlocker,
         doorZ: -35.72,
         cameraZ: -31.5,
+        restoreAfterOpen: {x:0, z:-33.0, ry:0},
         message: "All 6 scarabs are lit. Watch the door open!",
         onComplete: ()=>{
           if(window.bridgeArrowSign){
@@ -6719,6 +6769,7 @@ function openPuzzle(){
         blocker: window.fourthDoorBlocker,
         doorZ: -59.72,
         cameraZ: -55.2,
+        restoreAfterOpen: {x:0, z:-57.0, ry:0},
         message: "All 6 bridge steps are complete. Watch the door open!",
         onComplete: ()=>{
           sapphireVisible = true;
@@ -6747,6 +6798,7 @@ function openPuzzle(){
         blocker: window.fifthDoorBlocker,
         doorZ: -68.22,
         cameraZ: -64.2,
+        restoreAfterOpen: {x:0, z:-66.0, ry:0},
         message: "The wand awakens. Watch the door open!",
         onComplete: ()=>{
           if(window.villagerHallArrowSign){
@@ -6775,6 +6827,7 @@ function openPuzzle(){
         blocker: window.sixthDoorBlocker,
         doorZ: -87.72,
         cameraZ: -83.2,
+        restoreAfterOpen: {x:0, z:-84.8, ry:0},
         message: "All 6 villagers are free. Watch the Sun Seal Chamber door open!",
         onComplete: ()=>{
           sunSealVisible = true;
@@ -7125,14 +7178,14 @@ function openPuzzle(){
           if(a.goldLight) a.goldLight.intensity = (LOW_POWER ? 1.5 : 2.6) + Math.sin(elapsed*2.7 + 1.2)*.35;
         }
       }
-      if(doorOpen && window.firstDoor && window.firstDoor.mesh.position.y < 4.2){
+      if(!doorCinematicActive && doorOpen && window.firstDoor && window.firstDoor.mesh.position.y < 4.2){
           window.firstDoor.mesh.position.y += dt*1.65;
           if(window.firstDoorLabel && window.firstDoorLabel.position.y < 5.2) window.firstDoorLabel.position.y += dt*1.65;
         }
-      if(window.secondDoorOpen && window.secretDoor && window.secretDoor.mesh.position.y < 5.1) window.secretDoor.mesh.position.y += dt*1.65;
-      if(window.thirdDoorOpen && window.thirdDoor && window.thirdDoor.mesh.position.y < 5.1) window.thirdDoor.mesh.position.y += dt*1.65;
-      if(window.fourthDoorOpen && window.fourthDoor && window.fourthDoor.mesh.position.y < 5.1) window.fourthDoor.mesh.position.y += dt*1.65;
-      if(window.fifthDoorOpen && window.fifthDoor && window.fifthDoor.mesh.position.y < 5.1) window.fifthDoor.mesh.position.y += dt*1.65;
+      if(!doorCinematicActive && window.secondDoorOpen && window.secretDoor && window.secretDoor.mesh.position.y < 5.1) window.secretDoor.mesh.position.y += dt*1.65;
+      if(!doorCinematicActive && window.thirdDoorOpen && window.thirdDoor && window.thirdDoor.mesh.position.y < 5.1) window.thirdDoor.mesh.position.y += dt*1.65;
+      if(!doorCinematicActive && window.fourthDoorOpen && window.fourthDoor && window.fourthDoor.mesh.position.y < 5.1) window.fourthDoor.mesh.position.y += dt*1.65;
+      if(!doorCinematicActive && window.fifthDoorOpen && window.fifthDoor && window.fifthDoor.mesh.position.y < 5.1) window.fifthDoor.mesh.position.y += dt*1.65;
       if(finalDoorOpen && window.finalExitScene && window.finalExitScene.door && window.finalExitScene.door.mesh.position.y < 5.4) window.finalExitScene.door.mesh.position.y += dt*1.65;
       if(finalEscapeStarted && window.finalExitScene){
         if(window.finalExitScene.glow && window.finalExitScene.glow.material){
