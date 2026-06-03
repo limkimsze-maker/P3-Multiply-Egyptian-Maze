@@ -3045,6 +3045,20 @@ body.quizPageOpen #messageBox{
   }
 }
 
+
+/* Temporary testing button */
+#btnCheatSolve{
+  background:linear-gradient(180deg,#fde68a,#b45309);
+  color:#2b1705;
+}
+@media(max-width:760px){
+  #btnCheatSolve{
+    min-height:36px;
+    padding:7px 8px;
+    font-size:13px;
+  }
+}
+
 </style>
 </head>
 
@@ -3218,6 +3232,7 @@ body.quizPageOpen #messageBox{
           <div class="actionRow">
             <button class="bigBtn green" id="btnCheck">✔ Check Digit</button>
             <button class="bigBtn" id="btnHint">Hint</button>
+            <button class="bigBtn dark" id="btnCheatSolve" type="button">⚡ Cheat Solve</button>
             <button class="bigBtn dark" id="btnNextQuestion" style="display:none">Next Question ▶</button>
           </div>
           <div class="quizNote">
@@ -3590,10 +3605,10 @@ const wrap = document.getElementById("gameWrap");
       if(window.restorationKeyObj){
         window.restorationKeyObj.group.visible = !!(restorationKeyVisible && !restorationKeyCollected);
         if(restorationKeyVisible && !restorationKeyCollected){
-          window.restorationKeyObj.group.position.set(0,1.55,-103.8);
+          window.restorationKeyObj.group.position.set(0,1.55,-105.4);
           window.restorationKeyObj.group.scale.set(1.75,1.75,1.75);
-          window.restorationKeyObj.position.set(0,1.55,-103.8);
-          window.restorationKeyObj.radius = 10.0;
+          window.restorationKeyObj.position.set(0,1.55,-105.4);
+          window.restorationKeyObj.radius = 8.5;
         }
       }
 
@@ -4676,11 +4691,11 @@ const wrap = document.getElementById("gameWrap");
       if(window.restorationKeyObj){
         window.restorationKeyObj.group.visible = true;
         window.restorationKeyObj.group.scale.set(1.75,1.75,1.75);
-        window.restorationKeyObj.group.position.set(0,1.55,-103.8);
-        window.restorationKeyObj.position.set(0,1.55,-103.8);
-        window.restorationKeyObj.radius = 10.0;
+        window.restorationKeyObj.group.position.set(0,1.55,-105.4);
+        window.restorationKeyObj.position.set(0,1.55,-105.4);
+        window.restorationKeyObj.radius = 8.5;
       }
-      showMessage("All 6 Sun Seals are lit! The Key of Product has appeared. Walk near it and tap the prompt.");
+      showMessage("All 6 Sun Seals are lit! Walk near the Key of Product and tap the prompt.");
       playVictory();
       burstConfetti(true);
       saveProgress();
@@ -4689,7 +4704,7 @@ const wrap = document.getElementById("gameWrap");
 
     function addRestorationKey(){
       const group = new THREE.Group();
-      group.position.set(0,1.55,-103.8);
+      group.position.set(0,1.55,-105.4);
       group.scale.set(1.75,1.75,1.75);
       group.visible = false;
 
@@ -4788,7 +4803,7 @@ const wrap = document.getElementById("gameWrap");
       lctx.font = "bold 54px Georgia, serif";
       lctx.fillText("KEY OF PRODUCT",360,92);
       lctx.font = "bold 30px Georgia, serif";
-      lctx.fillText("Tap prompt to collect",360,154);
+      lctx.fillText("KEY",360,154);
       const labelTex = new THREE.CanvasTexture(labelCanvas);
       if(THREE.sRGBEncoding) labelTex.encoding = THREE.sRGBEncoding;
       const label = new THREE.Mesh(
@@ -4806,9 +4821,8 @@ const wrap = document.getElementById("gameWrap");
       const obj = {
         id:"restorationKey",
         group,
-        position:new THREE.Vector3(0,1.55,-103.8),
-        radius:10.0,
-        label:"Collect Key of Product"
+        position:new THREE.Vector3(0,1.55,-105.4),
+        radius:8.5,label:"Collect Key of Product"
       };
       interactables.push(obj);
       animated.push({type:"restorationKey",group,ring,shaft,halo,light,t:0});
@@ -5848,7 +5862,7 @@ function addTablet(){
       addSunSeal(1,0,-94.2);
       addSunSeal(2,4.2,-93.0);
       addSunSeal(3,-4.2,-101.0);
-      addSunSeal(4,0,-102.2);
+      addSunSeal(4,0,-97.8);
       addSunSeal(5,4.2,-101.0);
 
 
@@ -6062,18 +6076,20 @@ function addTablet(){
 
 
     function currentRestorationKeyTarget(){
-      if(!restorationKeyVisible || restorationKeyCollected || !window.restorationKeyObj || !camera) return null;
-      const key = window.restorationKeyObj;
-      const pos = key.position || new THREE.Vector3(0,1.35,-104.6);
-      const inC6 = camera.position.z < -90.0 && camera.position.z > -108.6;
+      if(!restorationKeyVisible || restorationKeyCollected || !camera) return null;
+
+      // C6 Key prompt works like the scarab prompt: just go near it and tap the prompt.
+      const keyPos = new THREE.Vector3(0,1.55,-105.4);
+      const inC6 = camera.position.z < -90.0 && camera.position.z > -108.8;
       if(!inC6) return null;
-      const dist = Math.hypot(camera.position.x - pos.x, camera.position.z - pos.z);
-      if(dist < 9.5){
+
+      const dist = Math.hypot(camera.position.x - keyPos.x, camera.position.z - keyPos.z);
+      if(dist < 8.5){
         return {
           id:"restorationKey",
-          group:key.group,
-          position:pos,
-          radius:9.5,
+          group:window.restorationKeyObj ? window.restorationKeyObj.group : null,
+          position:keyPos,
+          radius:8.5,
           label:"Collect Key of Product"
         };
       }
@@ -7232,6 +7248,7 @@ function openPuzzle(){
       const completedQuestion = state.done >= steps.length;
       $("btnCheck").disabled = completedQuestion;
       $("btnHint").disabled = completedQuestion;
+      if($("btnCheatSolve")) $("btnCheatSolve").disabled = completedQuestion;
       $("btnNextQuestion").style.display = completedQuestion ? "inline-flex" : "none";
       $("btnNextQuestion").textContent = activeQuizMode === "torch" ? "Light Torch ▶" : (activeQuizMode === "scarab" ? "Light Scarab ▶" : (activeQuizMode === "sand" ? "Take Step ▶" : (activeQuizMode === "villager" ? "Free Villager ▶" : (activeQuizMode === "sun" ? "Light Sun Seal ▶" : (totalQuestionNumber() >= TOTAL_QUESTIONS ? "Open Door" : "Next Question ▶")))));
 
@@ -7569,6 +7586,27 @@ function openPuzzle(){
       busy = false;
     }
 
+
+    function cheatSolveCurrentAlgorithm(){
+      if(!state || !steps || state.done >= steps.length) return;
+      busy = false;
+      busyStartedAt = 0;
+
+      while(state.done < steps.length){
+        applyStepState();
+      }
+
+      quiz.solvedTotal += 1;
+      quiz.questionComplete = true;
+      hideHint();
+      renderAll();
+      playChime();
+
+      const nextBtn = $("btnNextQuestion");
+      const actionText = nextBtn ? nextBtn.textContent : "continue";
+      setFeedback("ok", `<b>Cheat mode:</b> Algorithm marked as solved. Press <b>${actionText}</b> to continue.`);
+    }
+
     function checkDigit(){
       // Self-healing guard: if a previous tap left busy stuck, reset it instead of hanging.
       if(busy){
@@ -7680,6 +7718,7 @@ function openPuzzle(){
 
     $("btnCheck").addEventListener("click",safeCheckDigitTap);
     $("btnCheck").addEventListener("pointerup",safeCheckDigitTap);
+    $("btnCheatSolve").addEventListener("click",cheatSolveCurrentAlgorithm);
     $("btnHint").addEventListener("click",()=>{
       clearFeedback();
       showHint(explainHint());
