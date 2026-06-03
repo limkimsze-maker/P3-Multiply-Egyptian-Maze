@@ -2773,6 +2773,24 @@ const wrap = document.getElementById("gameWrap");
       }catch(e){ return null; }
     }
 
+
+    function syncDoorBlockers(){
+      if(window.firstDoor) window.firstDoor.active = !doorOpen;
+      if(window.firstDoorBlocker) window.firstDoorBlocker.active = !doorOpen;
+
+      if(window.secretDoor) window.secretDoor.active = !window.secondDoorOpen;
+      if(window.secretDoorBlocker) window.secretDoorBlocker.active = !window.secondDoorOpen;
+
+      if(window.thirdDoor) window.thirdDoor.active = !window.thirdDoorOpen;
+      if(window.thirdDoorBlocker) window.thirdDoorBlocker.active = !window.thirdDoorOpen;
+
+      if(window.fourthDoor) window.fourthDoor.active = !window.fourthDoorOpen;
+      if(window.fourthDoorBlocker) window.fourthDoorBlocker.active = !window.fourthDoorOpen;
+
+      if(window.fifthDoor) window.fifthDoor.active = !window.fifthDoorOpen;
+      if(window.fifthDoorBlocker) window.fifthDoorBlocker.active = !window.fifthDoorOpen;
+    }
+
     function setDoorVisual(doorObj, openY, closedY, isOpen){
       if(!doorObj) return;
       doorObj.active = !isOpen;
@@ -2801,6 +2819,7 @@ const wrap = document.getElementById("gameWrap");
         window.villagerHallArrowSign.visible = !!window.fifthDoorOpen;
         if(window.villagerHallArrowSign.userData && window.villagerHallArrowSign.userData.blocker) window.villagerHallArrowSign.userData.blocker.active = !!window.fifthDoorOpen;
       }
+      syncDoorBlockers();
 
       if(window.rubyObj) window.rubyObj.group.visible = !!(rubyVisible && !rubyCollected);
       if(window.topazObj) window.topazObj.group.visible = !!(topazVisible && !topazCollected);
@@ -4582,6 +4601,13 @@ function addTablet(){
     function collides(x,z){
       const r=.42;
       for(const o of obstacles){
+        // Door fail-safe: once a door is open, its visual slab and invisible blocker must not collide.
+        if((o === window.firstDoor || o === window.firstDoorBlocker) && doorOpen) continue;
+        if((o === window.secretDoor || o === window.secretDoorBlocker) && window.secondDoorOpen) continue;
+        if((o === window.thirdDoor || o === window.thirdDoorBlocker) && window.thirdDoorOpen) continue;
+        if((o === window.fourthDoor || o === window.fourthDoorBlocker) && window.fourthDoorOpen) continue;
+        if((o === window.fifthDoor || o === window.fifthDoorBlocker) && window.fifthDoorOpen) continue;
+
         if(!o.active) continue;
         if(x>o.minX-r && x<o.maxX+r && z>o.minZ-r && z<o.maxZ+r) return true;
       }
@@ -4846,28 +4872,40 @@ function openPuzzle(){
     function openDoor(){
       if(doorOpen) return;
       doorOpen = true;
-      if(window.firstDoor) window.firstDoor.active = false;
+      if(window.firstDoor){
+        window.firstDoor.active = false;
+        if(window.firstDoor.mesh) window.firstDoor.mesh.position.y = 8.8;
+      }
+      if(window.firstDoorBlocker) window.firstDoorBlocker.active = false;
+      syncDoorBlockers();
       rubyVisible = true;
       window.rubyObj.group.visible = true;
       showMessage("Starting Chamber cleared! The first stone door opens. Collect the Ruby of Product.");
       playStoneMove();
+      saveProgress();
     }
 
     function openSecondDoor(){
       if(window.secondDoorOpen) return;
       window.secondDoorOpen = true;
       if(window.secretDoorBlocker) window.secretDoorBlocker.active = false;
-      if(window.secretDoor) window.secretDoor.active = false;
+      if(window.secretDoor){
+        window.secretDoor.active = false;
+        if(window.secretDoor.mesh) window.secretDoor.mesh.position.y = 8.8;
+      }
+      syncDoorBlockers();
       topazVisible = true;
       window.topazObj.group.visible = true;
       showMessage("All 6 torches are lit! The second door opens. Collect the Topaz of Tens.");
       playStoneMove();
+      saveProgress();
     }
 
     function openThirdDoor(){
       if(window.thirdDoorOpen) return;
       window.thirdDoorOpen = true;
       if(window.thirdDoorBlocker) window.thirdDoorBlocker.active = false;
+      syncDoorBlockers();
       if(window.thirdDoor){
         window.thirdDoor.active = false;
         if(window.thirdDoor.mesh){
@@ -4896,6 +4934,7 @@ function openPuzzle(){
       if(window.fourthDoorOpen) return;
       window.fourthDoorOpen = true;
       if(window.fourthDoorBlocker) window.fourthDoorBlocker.active = false;
+      syncDoorBlockers();
       if(window.fourthDoor){
         window.fourthDoor.active = false;
         if(window.fourthDoor.mesh) window.fourthDoor.mesh.position.y = 8.8;
@@ -4922,6 +4961,7 @@ function openPuzzle(){
         if(window.villagerHallArrowSign.userData && window.villagerHallArrowSign.userData.blocker) window.villagerHallArrowSign.userData.blocker.active = true;
       }
       if(window.fifthDoorBlocker) window.fifthDoorBlocker.active = false;
+      syncDoorBlockers();
       if(window.fifthDoor){
         window.fifthDoor.active = false;
         if(window.fifthDoor.mesh) window.fifthDoor.mesh.position.y = 8.8;
@@ -6135,4 +6175,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-  </html>
+      </html>
