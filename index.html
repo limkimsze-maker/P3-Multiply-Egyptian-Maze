@@ -2178,12 +2178,45 @@ body.quizPageOpen #messageBox{
       }
     }
 
+
+    /* Main Menu sits directly under Sound On/Off button */
+    #buttonsTopRight{
+      display:flex !important;
+      flex-direction:column !important;
+      align-items:flex-end !important;
+      gap:8px !important;
+      right:12px !important;
+      top:calc(80px + var(--safeTop)) !important;
+      z-index:22 !important;
+    }
+    #buttonsTopRight #mainMenuBtn{
+      position:static !important;
+      right:auto !important;
+      top:auto !important;
+      z-index:auto !important;
+      font-size:13px !important;
+      padding:10px 12px !important;
+      border-radius:14px !important;
+      white-space:nowrap !important;
+    }
+    @media(max-width:760px){
+      #buttonsTopRight{
+        right:8px !important;
+        top:calc(84px + var(--safeTop)) !important;
+        gap:7px !important;
+      }
+      #buttonsTopRight #soundBtn,
+      #buttonsTopRight #mainMenuBtn{
+        font-size:12px !important;
+        padding:9px 10px !important;
+      }
+    }
+
 </style>
 </head>
 
 <body>
   <div id="gameWrap"></div>
-  <button id="mainMenuBtn" type="button">☰ Main Menu</button>
 
   <div id="coverPage" aria-label="Game introduction">
     <div class="coverCard">
@@ -2244,6 +2277,7 @@ body.quizPageOpen #messageBox{
 
   <div id="buttonsTopRight">
     <button class="smallBtn" id="soundBtn">🔊 Sound On</button>
+    <button class="smallBtn" id="mainMenuBtn" type="button">☰ Main Menu</button>
   </div>
 
   <div id="centerDot"></div>
@@ -3525,8 +3559,8 @@ const wrap = document.getElementById("gameWrap");
         id:"scarabBtn" + idx,
         group,
         position:new THREE.Vector3(x,.55,z),
-        radius:3.4,
-        label:`Solve Scarab ${idx+1}`
+        radius:6.5,
+        label:`Solve Scarab ${idx+1} question`
       });
 
       animated.push({type:"scarab",obj:scarab,t:Math.random()*10});
@@ -4254,7 +4288,25 @@ function addTablet(){
     }
 
 
+    function updateScarabPromptVisuals(){
+      const next = scarabChallengeDone.size;
+      scarabs.forEach((s)=>{
+        if(!s) return;
+        const active = s.idx === next && s.alive && !emeraldCollected;
+        if(s.pad && s.pad.material){
+          s.pad.material.emissive.setHex(active ? 0xfacc15 : (s.alive ? 0x0f5132 : 0xfacc15));
+          s.pad.material.emissiveIntensity = active ? 1.05 : (s.alive ? .38 : .7);
+          s.pad.material.needsUpdate = true;
+        }
+        if(s.padRing && s.padRing.material){
+          s.padRing.material.color.setHex(active ? 0xfff7ad : (s.alive ? 0xbbf7d0 : 0xfff7ad));
+          s.padRing.material.opacity = active ? 1 : (s.alive ? .85 : .98);
+        }
+      });
+    }
+
     function updateInteraction(){
+      updateScarabPromptVisuals();
       currentTarget = null;
       let nearest = Infinity;
       for(const item of interactables){
@@ -4269,8 +4321,8 @@ function addTablet(){
         }
         if(String(item.id || "").startsWith("scarabBtn")){
           const idx = Number(String(item.id).replace("scarabBtn",""));
-          const inC3Area = camera && camera.position.z < -21.5 && camera.position.z > -36.5;
-          if(!inC3Area || emeraldCollected || scarabChallengeDone.has(idx) || idx !== scarabChallengeDone.size) continue;
+          const scarabStageReady = (window.secondDoorOpen || topazCollected || (camera && camera.position.z < -21.0));
+          if(!scarabStageReady || emeraldCollected || scarabChallengeDone.has(idx) || idx !== scarabChallengeDone.size) continue;
         }
         if(String(item.id || "").startsWith("sandBtn")){
           const idx = Number(String(item.id).replace("sandBtn",""));
@@ -4338,7 +4390,7 @@ if(currentTarget){
           return;
         }
         if(idx !== scarabChallengeDone.size){
-          showMessage(`Go to Scarab ${scarabChallengeDone.size + 1} first.`);
+          showMessage(`Go near Scarab ${scarabChallengeDone.size + 1} first.`);
           return;
         }
         activeQuizMode = "scarab";
@@ -4348,7 +4400,7 @@ if(currentTarget){
         quiz.solvedTotal = 0;
         loadQuestion(randomQuestionForScarab());
         openPuzzle();
-        setFeedback("hint", "Scarab Puzzle Chamber: solve this 3-digit × 1-digit question to light this numbered scarab.");
+        setFeedback("hint", `Scarab ${idx+1}: solve this 3-digit × 1-digit multiplication algorithm. When correct, this scarab will light up.`);
       }
       if(String(currentTarget.id || "").startsWith("sandBtn")){
         const idx = Number(String(currentTarget.id).replace("sandBtn",""));
@@ -5467,7 +5519,7 @@ function openPuzzle(){
             }
           }, 650);
         }else if(activeQuizMode === "scarab"){
-          setFeedback("ok", `<b>Correct.</b> Lighting this scarab...`);
+          setFeedback("ok", `<b>Correct.</b> Lighting Scarab ${activeScarabIndex + 1}...`);
           const solvedScarabIndex = activeScarabIndex;
           setTimeout(()=>{
             if(activeQuizMode === "scarab" && activeScarabIndex === solvedScarabIndex){
