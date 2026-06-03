@@ -2838,9 +2838,12 @@ const wrap = document.getElementById("gameWrap");
           obj.button.material.emissiveIntensity = lit ? .95 : .18;
           obj.button.material.needsUpdate = true;
         }
+        if(obj.previewLight) obj.previewLight.intensity = 0;
+        if(obj.previewRing) obj.previewRing.visible = false;
         if(obj.flame) obj.flame.visible = lit;
         if(obj.light) obj.light.intensity = lit ? (LOW_POWER ? 1.5 : 2.4) : 0;
       });
+      updateTorchGalleryProgression();
       updateTorchHud();
 
       scarabLightedCount = scarabChallengeDone.size;
@@ -3050,6 +3053,19 @@ const wrap = document.getElementById("gameWrap");
       button.castShadow = !LOW_POWER;
       group.add(button);
 
+      const previewLight = new THREE.PointLight(0xffd16b, 0, LOW_POWER ? 4.2 : 5.6, 2.1);
+      previewLight.position.set(0,.55,0);
+      previewLight.castShadow = false;
+      group.add(previewLight);
+
+      const previewRing = new THREE.Mesh(
+        new THREE.TorusGeometry(.48,.035,10,32),
+        new THREE.MeshStandardMaterial({color:0xffec99,emissive:0xffb703,emissiveIntensity:.28,transparent:true,opacity:.92,roughness:.35})
+      );
+      previewRing.rotation.x = Math.PI/2;
+      previewRing.position.y = .08;
+      group.add(previewRing);
+
       const canvas = document.createElement("canvas");
       canvas.width = 256; canvas.height = 128;
       const ctx = canvas.getContext("2d");
@@ -3079,20 +3095,47 @@ const wrap = document.getElementById("gameWrap");
       torchGroup.add(light);
       group.add(torchGroup);
 
+      group.visible = idx === 0;
       scene.add(group);
       const id = "torchBtn" + idx;
       interactables.push({id,group,position:new THREE.Vector3(x,.55,z),radius:1.85,label:`Solve torch ${idx+1} question`});
-      const obj = {idx,group,button,flame,light,lit:false};
+      const obj = {idx,group,button,flame,light,lit:false,label,previewLight,previewRing};
       torchButtons[idx] = obj;
       return obj;
+    }
+
+    function updateTorchGalleryProgression(){
+      const nextIdx = Math.min(torchChallengeDone.size, TORCH_TOTAL - 1);
+      torchButtons.forEach((obj)=>{
+        if(!obj) return;
+        const active = torchChallengeDone.size < TORCH_TOTAL && obj.idx === nextIdx && !obj.lit;
+        const shouldShow = obj.lit || active || torchChallengeDone.size >= TORCH_TOTAL;
+        obj.group.visible = shouldShow;
+
+        if(obj.previewLight){
+          obj.previewLight.intensity = active ? (LOW_POWER ? 0.8 : 1.15) : 0;
+          obj.previewLight.distance = active ? (LOW_POWER ? 4.6 : 6.0) : 0;
+        }
+        if(obj.previewRing) obj.previewRing.visible = active;
+
+        if(obj.button && obj.button.material && !obj.lit){
+          obj.button.material.color.setHex(active ? 0xf2b84b : 0xd9952b);
+          obj.button.material.emissive.setHex(active ? 0x7a4a00 : 0x3a1b03);
+          obj.button.material.emissiveIntensity = active ? 0.5 : 0.18;
+          obj.button.material.needsUpdate = true;
+        }
+      });
     }
 
     function lightTorchButton(idx){
       const obj = torchButtons[idx];
       if(!obj || obj.lit) return;
       obj.lit = true;
+      obj.group.visible = true;
       obj.button.material.color.setHex(0x5a2a0b);
       obj.button.material.emissive.setHex(0x221000);
+      if(obj.previewLight) obj.previewLight.intensity = 0;
+      if(obj.previewRing) obj.previewRing.visible = false;
       obj.flame.visible = true;
       obj.flame.material.color.setHex(0xffb129);
       obj.flame.material.emissive.setHex(0xff7a00);
@@ -4882,6 +4925,7 @@ function openPuzzle(){
       window.rubyObj.group.visible = true;
       showMessage("Starting Chamber cleared! The first stone door opens. Collect the Ruby of Product.");
       playStoneMove();
+      updateTorchGalleryProgression();
       saveProgress();
     }
 
@@ -5895,10 +5939,11 @@ function openPuzzle(){
       playChime();
       burstConfetti(false);
 
+      updateTorchGalleryProgression();
       if(torchLitCount >= TORCH_TOTAL){
         openSecondDoor();
       }else{
-        showMessage(`Torch ${torchLitCount} of ${TORCH_TOTAL} is lit. Proceed to the next torch button.`);
+        showMessage(`Torch ${torchLitCount} of ${TORCH_TOTAL} is lit. The next torch is now glowing in the darkness.`);
       }
 
       activeTorchIndex = null;
@@ -6175,4 +6220,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-      </html>
+  </html>
