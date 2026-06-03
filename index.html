@@ -2959,6 +2959,20 @@ const wrap = document.getElementById("gameWrap");
     const matGlow = new THREE.MeshStandardMaterial({ color:0xffd36b, emissive:0xff9d28, emissiveIntensity:1.35, roughness:.45 });
     const matRuby = new THREE.MeshStandardMaterial({ color:0xe91954, emissive:0xff185e, emissiveIntensity:.95, roughness:.28, metalness:.2 });
     const matBlack = new THREE.MeshStandardMaterial({ color:0x140d08, roughness:1 });
+    const matStartDarkFloor = new THREE.MeshStandardMaterial({
+      color:0x2b1206,
+      roughness:1,
+      metalness:0,
+      emissive:0x080201,
+      emissiveIntensity:.04
+    });
+    const matStartDarkWall = new THREE.MeshStandardMaterial({
+      color:0x210906,
+      roughness:1,
+      metalness:0,
+      emissive:0x040100,
+      emissiveIntensity:.035
+    });
     const matTorchDarkFloor = new THREE.MeshStandardMaterial({
       color:0x080402,
       roughness:1,
@@ -2975,9 +2989,9 @@ const wrap = document.getElementById("gameWrap");
     });
 
     function addAmbient(){
-      const hemi = new THREE.HemisphereLight(0xffe2a3, 0x190c03, 0.58);
+      const hemi = new THREE.HemisphereLight(0xffd29a, 0x050201, 0.28);
       scene.add(hemi);
-      const moon = new THREE.DirectionalLight(0xffddaa, LOW_POWER ? 0.32 : 0.42);
+      const moon = new THREE.DirectionalLight(0xffc68a, LOW_POWER ? 0.16 : 0.22);
       moon.position.set(-5, 12, 8);
       moon.castShadow = !LOW_POWER;
       if(moon.castShadow){
@@ -3048,6 +3062,33 @@ const wrap = document.getElementById("gameWrap");
     }
 
     
+    function addDimStartTorch(x,z,side="wall"){
+      const group = new THREE.Group();
+      group.position.set(x,1.35,z);
+      const holder = new THREE.Mesh(
+        new THREE.CylinderGeometry(.055,.075,.62,8),
+        new THREE.MeshStandardMaterial({color:0x2a1709,roughness:.72,metalness:.25,emissive:0x080200,emissiveIntensity:.05})
+      );
+      holder.rotation.x = Math.PI/2;
+      group.add(holder);
+      const flame = new THREE.Mesh(
+        new THREE.ConeGeometry(.16,.34,14),
+        new THREE.MeshStandardMaterial({color:0xff9b22,emissive:0xff5a00,emissiveIntensity:.85,roughness:.45})
+      );
+      flame.position.y = .28;
+      group.add(flame);
+      const light = new THREE.PointLight(0xff8a28, LOW_POWER ? .38 : .55, LOW_POWER ? 3.2 : 4.0, 2.2);
+      light.position.y = .2;
+      light.castShadow = false;
+      group.add(light);
+      if(side==="left") group.rotation.y = Math.PI/2;
+      if(side==="right") group.rotation.y = -Math.PI/2;
+      if(side==="back") group.rotation.y = Math.PI;
+      scene.add(group);
+      animated.push({type:"torch",flame,light,base:LOW_POWER ? .28 : .42,t:Math.random()*10});
+      return group;
+    }
+
     function addDarkWallTorch(x,z,side="wall"){
       const group = new THREE.Group();
       group.position.set(x,1.35,z);
@@ -3161,19 +3202,20 @@ const wrap = document.getElementById("gameWrap");
       torchButtons.forEach((obj)=>{
         if(!obj) return;
         const active = torchChallengeDone.size < TORCH_TOTAL && obj.idx === nextIdx && !obj.lit;
-        const shouldShow = obj.lit || active || torchChallengeDone.size >= TORCH_TOTAL;
+        const shouldShow = obj.lit || active;
         obj.group.visible = shouldShow;
 
+        if(obj.label) obj.label.visible = shouldShow;
         if(obj.previewLight){
-          obj.previewLight.intensity = active ? (LOW_POWER ? 0.58 : 0.82) : 0;
-          obj.previewLight.distance = active ? (LOW_POWER ? 3.8 : 4.8) : 0;
+          obj.previewLight.intensity = active ? (LOW_POWER ? 0.48 : 0.68) : 0;
+          obj.previewLight.distance = active ? (LOW_POWER ? 3.5 : 4.4) : 0;
         }
         if(obj.previewRing) obj.previewRing.visible = active;
 
         if(obj.button && obj.button.material && !obj.lit){
-          obj.button.material.color.setHex(active ? 0xf2b84b : 0xd9952b);
-          obj.button.material.emissive.setHex(active ? 0x7a4a00 : 0x3a1b03);
-          obj.button.material.emissiveIntensity = active ? 0.5 : 0.18;
+          obj.button.material.color.setHex(active ? 0xf2b84b : 0x3a210c);
+          obj.button.material.emissive.setHex(active ? 0x6f4300 : 0x060200);
+          obj.button.material.emissiveIntensity = active ? 0.42 : 0.04;
           obj.button.material.needsUpdate = true;
         }
       });
@@ -4469,15 +4511,15 @@ function addTablet(){
 
     function buildWorld(){
       addAmbient();
-      addFloor(0,0,15,15);
+      addFloor(0,0,15,15,matStartDarkFloor);
       addFloor(0,-13.5,6,13,matTorchDarkFloor);
       addFloor(0,-28.5,15,15);
 
-      addWall(0,7.5,15,.55);
-      addWall(-7.5,0,.55,15);
-      addWall(7.5,0,.55,15);
-      addWall(-5.25,-7.5,4.5,.55);
-      addWall(5.25,-7.5,4.5,.55);
+      addWall(0,7.5,15,.55,3.4,matStartDarkWall);
+      addWall(-7.5,0,.55,15,3.4,matStartDarkWall);
+      addWall(7.5,0,.55,15,3.4,matStartDarkWall);
+      addWall(-5.25,-7.5,4.5,.55,3.4,matStartDarkWall);
+      addWall(5.25,-7.5,4.5,.55,3.4,matStartDarkWall);
       addWall(-3.25,-13.5,.55,13,3.4,matTorchDarkWall);
       addWall(3.25,-13.5,.55,13,3.4,matTorchDarkWall);
       window.firstDoor = addWall(0,-7.72,15.0,.72,3.8,matDoor,true);
@@ -4549,7 +4591,7 @@ function addTablet(){
       addPillar(-5.5,4.8); addPillar(5.5,4.8); addPillar(-5.5,-4.8); addPillar(5.5,-4.8);
       addPillar(-5.2,-32.2); addPillar(5.2,-32.2);
 
-      addTorch(-6.95,1.8,"left"); addTorch(6.95,1.8,"right");
+      addDimStartTorch(-6.95,1.8,"left"); addDimStartTorch(6.95,1.8,"right");
       addDarkWallTorch(-2.9,-12,"left"); addDarkWallTorch(2.9,-16.2,"right");
       addTorch(-6.9,-28.8,"left"); addTorch(6.9,-28.8,"right");
 
