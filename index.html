@@ -3561,10 +3561,7 @@ const wrap = document.getElementById("gameWrap");
       if(window.fourthDoorBlocker) window.fourthDoorBlocker.active = !window.fourthDoorOpen;
       setDoorVisual(window.fifthDoor,8.8,1.8,!!window.fifthDoorOpen);
       if(window.fifthDoorBlocker) window.fifthDoorBlocker.active = !window.fifthDoorOpen;
-      if(window.villagerHallArrowSign){
-        window.villagerHallArrowSign.visible = !!window.fifthDoorOpen;
-        if(window.villagerHallArrowSign.userData && window.villagerHallArrowSign.userData.blocker) window.villagerHallArrowSign.userData.blocker.active = !!window.fifthDoorOpen;
-      }
+      // Villagers arrow sign removed.
       syncDoorBlockers();
 
       if(window.rubyObj) window.rubyObj.group.visible = !!(rubyVisible && !rubyCollected);
@@ -5407,37 +5404,12 @@ function addTablet(){
     }
 
 
-    function addVillagerHallArrowSign(){
-      const canvas = document.createElement("canvas");
-      canvas.width = 512; canvas.height = 256;
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "rgba(30,16,5,.92)";
-      ctx.fillRect(0,0,512,256);
-      ctx.strokeStyle = "#ffd86b";
-      ctx.lineWidth = 12;
-      ctx.strokeRect(10,10,492,236);
-      ctx.fillStyle = "#fff0a8";
-      ctx.font = "bold 40px Georgia,serif";
-      ctx.textAlign = "center";
-      ctx.fillText("VILLAGERS",256,82);
-      ctx.font = "bold 68px Georgia,serif";
-      ctx.fillText("↓",256,154);
-      ctx.font = "bold 28px Georgia,serif";
-      ctx.fillText("Walk straight",256,210);
-      const tex = new THREE.CanvasTexture(canvas);
-      if(THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
-      const sign = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.4,1.2),
-        new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide})
-      );
-      sign.position.set(-3.65,2.1,-68.0);
-      sign.rotation.y = Math.PI;
-      sign.renderOrder = 15;
-      sign.visible = false;
-      scene.add(sign);
-      const blocker = addSolidObstacle(sign,-3.65,-68.0,2.6,.55,false);
-      sign.userData.blocker = blocker;
-      return sign;
+        function addVillagerHallArrowSign(){
+      // Removed: no Villagers arrow sign is used.
+      const group = new THREE.Group();
+      group.visible = false;
+      scene.add(group);
+      return group;
     }
 
 
@@ -5533,7 +5505,7 @@ function addTablet(){
       window.fifthDoorOpen = false;
       window.fifthDoor = addWall(0,-68.22,15.0,.72,3.8,matDoor,true);
       window.fifthDoorBlocker = addSolidObstacle(null,0,-68.22,15.6,1.2,true);
-      window.villagerHallArrowSign = addVillagerHallArrowSign();
+      window.villagerHallArrowSign = addVillagerHallArrowSign(); // hidden placeholder; sign removed
 
       // Chamber 5: Spellbound Villagers Hall
       addFloor(0,-78.5,15,19);
@@ -7389,4 +7361,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-        </html>
+                                 </html>
