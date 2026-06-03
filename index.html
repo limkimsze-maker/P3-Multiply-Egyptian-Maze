@@ -3489,12 +3489,13 @@ const wrap = document.getElementById("gameWrap");
       door.active = false;
       if(blocker) blocker.active = false;
 
-      // Clear angled overview: close enough to feel dramatic,
-      // but far/high enough to see the whole door rising.
-      const viewSideX = 5.4;
-      const viewBackZ = doorZ + 6.8;
-      const viewHeightY = 2.9;
-      const targetY = 1.85;
+      // Default door-opening view stays unchanged.
+      // Torch Chamber door can request a direct floor-level view from Torch 1.
+      const directFloorView = !!opts.directFloorView;
+      const viewSideX = directFloorView ? -2.25 : 5.4;
+      const viewBackZ = directFloorView ? -9.8 : doorZ + 6.8;
+      const viewHeightY = directFloorView ? 1.65 : 2.9;
+      const targetY = directFloorView ? 1.75 : 1.85;
 
       camera.position.set(viewSideX, viewHeightY, viewBackZ);
       faceCameraAt(0, targetY, doorZ);
@@ -5949,6 +5950,7 @@ function openPuzzle(){
         blocker: window.secretDoorBlocker,
         doorZ: -21,
         cameraZ: -17.2,
+        directFloorView: true,
         message: "All 6 torches are lit. Watch the door open!",
         onComplete: ()=>{
           topazVisible = true;
@@ -7261,4 +7263,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-  </html>
+      </html>
