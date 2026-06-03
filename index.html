@@ -2786,10 +2786,16 @@ const wrap = document.getElementById("gameWrap");
       }
       setDoorVisual(window.secretDoor,5.2,1.9,!!window.secondDoorOpen);
       setDoorVisual(window.thirdDoor,5.8,1.8,!!window.thirdDoorOpen);
-      if(window.bridgeArrowSign) window.bridgeArrowSign.visible = !!window.thirdDoorOpen;
+      if(window.bridgeArrowSign){
+        window.bridgeArrowSign.visible = !!window.thirdDoorOpen;
+        if(window.bridgeArrowSign.userData && window.bridgeArrowSign.userData.blocker) window.bridgeArrowSign.userData.blocker.active = !!window.thirdDoorOpen;
+      }
       setDoorVisual(window.fourthDoor,5.8,1.8,!!window.fourthDoorOpen);
       setDoorVisual(window.fifthDoor,5.8,1.8,!!window.fifthDoorOpen);
-      if(window.villagerHallArrowSign) window.villagerHallArrowSign.visible = !!window.fifthDoorOpen;
+      if(window.villagerHallArrowSign){
+        window.villagerHallArrowSign.visible = !!window.fifthDoorOpen;
+        if(window.villagerHallArrowSign.userData && window.villagerHallArrowSign.userData.blocker) window.villagerHallArrowSign.userData.blocker.active = !!window.fifthDoorOpen;
+      }
 
       if(window.rubyObj) window.rubyObj.group.visible = !!(rubyVisible && !rubyCollected);
       if(window.topazObj) window.topazObj.group.visible = !!(topazVisible && !topazCollected);
@@ -2959,6 +2965,12 @@ const wrap = document.getElementById("gameWrap");
       mesh.castShadow = !LOW_POWER;
       mesh.receiveShadow = !LOW_POWER;
       scene.add(mesh);
+      const item = {mesh,x,z,w,d,active,minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2};
+      obstacles.push(item);
+      return item;
+    }
+
+    function addSolidObstacle(mesh,x,z,w,d,active=true){
       const item = {mesh,x,z,w,d,active,minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2};
       obstacles.push(item);
       return item;
@@ -4292,11 +4304,13 @@ function addTablet(){
         new THREE.PlaneGeometry(2.3,1.15),
         new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide})
       );
-      sign.position.set(0,2.1,-37.15);
+      sign.position.set(-3.65,2.1,-37.15);
       sign.rotation.y = Math.PI;
       sign.renderOrder = 15;
       sign.visible = false;
       scene.add(sign);
+      const blocker = addSolidObstacle(sign,-3.65,-37.15,2.5,.55,false);
+      sign.userData.blocker = blocker;
       return sign;
     }
 
@@ -4324,11 +4338,13 @@ function addTablet(){
         new THREE.PlaneGeometry(2.4,1.2),
         new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide})
       );
-      sign.position.set(0,2.1,-68.0);
+      sign.position.set(-3.65,2.1,-68.0);
       sign.rotation.y = Math.PI;
       sign.renderOrder = 15;
       sign.visible = false;
       scene.add(sign);
+      const blocker = addSolidObstacle(sign,-3.65,-68.0,2.6,.55,false);
+      sign.userData.blocker = blocker;
       return sign;
     }
 
@@ -4847,7 +4863,10 @@ function openPuzzle(){
           window.thirdDoor.mesh.visible = true;
         }
       }
-      if(window.bridgeArrowSign) window.bridgeArrowSign.visible = true;
+      if(window.bridgeArrowSign){
+        window.bridgeArrowSign.visible = true;
+        if(window.bridgeArrowSign.userData && window.bridgeArrowSign.userData.blocker) window.bridgeArrowSign.userData.blocker.active = true;
+      }
       emeraldVisible = true;
       if(window.emeraldObj){
         window.emeraldObj.group.visible = true;
@@ -4885,7 +4904,10 @@ function openPuzzle(){
     function openFifthDoorToVillagers(){
       if(window.fifthDoorOpen) return;
       window.fifthDoorOpen = true;
-      if(window.villagerHallArrowSign) window.villagerHallArrowSign.visible = true;
+      if(window.villagerHallArrowSign){
+        window.villagerHallArrowSign.visible = true;
+        if(window.villagerHallArrowSign.userData && window.villagerHallArrowSign.userData.blocker) window.villagerHallArrowSign.userData.blocker.active = true;
+      }
       if(window.fifthDoor){
         window.fifthDoor.active = false;
         if(window.fifthDoor.mesh) window.fifthDoor.mesh.position.y = 5.8;
