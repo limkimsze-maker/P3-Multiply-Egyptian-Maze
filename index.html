@@ -2937,9 +2937,15 @@ const wrap = document.getElementById("gameWrap");
       door.active = false;
       if(blocker) blocker.active = false;
 
-      // Move the view so pupils can clearly see the closed door rising.
-      camera.position.set(0, 1.65, cameraZ);
-      faceCameraAt(0, 1.75, doorZ);
+      // Clear angled overview: close enough to feel dramatic,
+      // but far/high enough to see the whole door rising.
+      const viewSideX = 5.4;
+      const viewBackZ = doorZ + 6.8;
+      const viewHeightY = 2.9;
+      const targetY = 1.85;
+
+      camera.position.set(viewSideX, viewHeightY, viewBackZ);
+      faceCameraAt(0, targetY, doorZ);
 
       if(message) showMessage(message);
       playDoorOpeningSound();
@@ -2960,7 +2966,10 @@ const wrap = document.getElementById("gameWrap");
         const t = Math.min(1, (now - begin) / duration);
         const eased = easeOutCubic(t);
         door.mesh.position.y = startY + (openY - startY) * eased;
-        faceCameraAt(0, 1.75 + eased * .45, doorZ);
+
+        // Keep the angled overview and gently follow the rising door.
+        camera.position.set(viewSideX, viewHeightY, viewBackZ);
+        faceCameraAt(0, targetY + eased * 1.25, doorZ);
 
         if(t < 1){
           requestAnimationFrame(step);
@@ -5359,7 +5368,7 @@ function openPuzzle(){
         blocker: window.firstDoorBlocker,
         doorZ: -7.72,
         cameraZ: -3.0,
-        message: "Watch carefully... the Torch Corridor door is opening!",
+        message: "Watch carefully... the door is opening!",
         onComplete: ()=>{
           rubyVisible = true;
           if(window.rubyObj) window.rubyObj.group.visible = true;
@@ -5381,7 +5390,7 @@ function openPuzzle(){
         blocker: window.secretDoorBlocker,
         doorZ: -21,
         cameraZ: -17.2,
-        message: "All 6 torches are lit. Watch the Scarab Chamber door open!",
+        message: "All 6 torches are lit. Watch the door open!",
         onComplete: ()=>{
           topazVisible = true;
           if(window.topazObj) window.topazObj.group.visible = true;
@@ -5402,7 +5411,7 @@ function openPuzzle(){
         blocker: window.thirdDoorBlocker,
         doorZ: -35.72,
         cameraZ: -31.5,
-        message: "All 6 scarabs are lit. Watch the bridge door open!",
+        message: "All 6 scarabs are lit. Watch the door open!",
         onComplete: ()=>{
           if(window.bridgeArrowSign){
             window.bridgeArrowSign.visible = true;
@@ -5433,7 +5442,7 @@ function openPuzzle(){
         blocker: window.fourthDoorBlocker,
         doorZ: -59.72,
         cameraZ: -55.2,
-        message: "All 6 bridge steps are complete. Watch the wand door open!",
+        message: "All 6 bridge steps are complete. Watch the door open!",
         onComplete: ()=>{
           sapphireVisible = true;
           if(window.sapphireObj){
@@ -5461,7 +5470,7 @@ function openPuzzle(){
         blocker: window.fifthDoorBlocker,
         doorZ: -68.22,
         cameraZ: -64.2,
-        message: "The wand awakens. Watch the Villagers Hall door open!",
+        message: "The wand awakens. Watch the door open!",
         onComplete: ()=>{
           if(window.villagerHallArrowSign){
             window.villagerHallArrowSign.visible = true;
