@@ -6570,6 +6570,7 @@ function openPuzzle(){
     let steps = [];
     let state = null;
     let busy = false;
+    let busyStartedAt = 0;
     function isCompactQuizView(){
       const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       const narrow = window.matchMedia && window.matchMedia("(max-width: 980px)").matches;
@@ -7120,8 +7121,10 @@ function openPuzzle(){
     }
 
     async function advanceStep(){
-      if(busy || state.done >= steps.length) return;
+      if(busy && Date.now() - busyStartedAt < 900) return;
+      if(state.done >= steps.length) return;
       busy = true;
+      busyStartedAt = Date.now();
       applyStepState();
       hideHint();
 
@@ -7188,15 +7191,26 @@ function openPuzzle(){
     }
 
     function checkDigit(){
-      if(busy || state.done >= steps.length) return;
+      // Self-healing guard: if a previous tap left busy stuck, reset it instead of hanging.
+      if(busy){
+        if(Date.now() - busyStartedAt > 900){
+          busy = false;
+        }else{
+          setFeedback("hint","Checking... please wait a moment.");
+          return;
+        }
+      }
+      if(state.done >= steps.length) return;
+
       const s = stepForCurrent();
       const digitEl = $("currentDigitInput");
-      if(!digitEl) return;
+      if(!s || !digitEl) return;
 
       const guessDigit = String(digitEl.value || "").trim();
       if(guessDigit === ""){
         setFeedback("bad","Type a digit first.");
         playWrong();
+        setActiveEntry(digitEl);
         return;
       }
 
@@ -7207,7 +7221,7 @@ function openPuzzle(){
       if(needsCarry){
         const carryEl = $("carryInput");
         if(!carryEl || String(carryEl.value || "").trim()===""){
-          setFeedback("bad","Type the regrouping digit too.");
+          setFeedback("bad",`Type the regrouping digit <b>${s.carryOut}</b> too.`);
           playWrong();
           setActiveEntry(carryEl);
           return;
@@ -7217,6 +7231,7 @@ function openPuzzle(){
 
       if(guessDigit === String(s.writeDigit)){
         if(!needsCarry || guessCarry === String(s.carryOut)){
+          setFeedback("ok","Correct. Moving to the next place value...");
           advanceStep();
           return;
         }
@@ -7273,7 +7288,19 @@ function openPuzzle(){
     $("btnBackspace").addEventListener("click",backspaceEntry);
     $("btnClearEntry").addEventListener("click",clearEntry);
 
-    $("btnCheck").addEventListener("click",checkDigit);
+
+    let lastCheckTapAt = 0;
+    function safeCheckDigitTap(ev){
+      if(ev) ev.preventDefault?.();
+      const now = Date.now();
+      if(now - lastCheckTapAt < 260) return;
+      lastCheckTapAt = now;
+      if(state && state.done >= steps.length) nextQuizQuestion();
+      else checkDigit();
+    }
+
+    $("btnCheck").addEventListener("click",safeCheckDigitTap);
+    $("btnCheck").addEventListener("pointerup",safeCheckDigitTap);
     $("btnHint").addEventListener("click",()=>{
       clearFeedback();
       showHint(explainHint());
@@ -7281,10 +7308,8 @@ function openPuzzle(){
     $("btnNextQuestion").addEventListener("click", nextQuizQuestion);
     const floatingCheckBtn = $("floatingCheckBtn");
     if(floatingCheckBtn){
-      floatingCheckBtn.addEventListener("click",()=>{
-        if(state.done >= steps.length) nextQuizQuestion();
-        else checkDigit();
-      });
+      floatingCheckBtn.addEventListener("click",safeCheckDigitTap);
+      floatingCheckBtn.addEventListener("pointerup",safeCheckDigitTap);
     }
     $("btnToggleMat").addEventListener("click",()=>{
       matVisible = !matVisible;
@@ -7361,4 +7386,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-                                 </html>
+  </html>
