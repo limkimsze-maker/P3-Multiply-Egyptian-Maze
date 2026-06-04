@@ -6894,6 +6894,9 @@ function openPuzzle(){
     function ensureRubyVisibleBeforeCollected(){
       // Hard guarantee: once the first door is open, Ruby must be visible and collectable
       // until the pupil actually taps "Collect Ruby of Product".
+      // Do NOT run during the door-opening cinematic, or it will force the door fully open
+      // and pupils will not see the gradual opening.
+      if(doorCinematicActive) return;
       if(!doorOpen || rubyCollected || !window.rubyObj) return;
 
       rubyVisible = true;
@@ -6909,7 +6912,7 @@ function openPuzzle(){
       // Keep the first door really open, so the Ruby is not hidden behind the slab.
       if(window.firstDoor){
         window.firstDoor.active = false;
-        if(window.firstDoor.mesh) window.firstDoor.mesh.position.y = 8.8;
+        if(window.firstDoor.mesh && !doorCinematicActive) window.firstDoor.mesh.position.y = 8.8;
       }
       if(window.firstDoorLabel) window.firstDoorLabel.position.y = 8.8;
       if(window.firstDoorBlocker) window.firstDoorBlocker.active = false;
@@ -6926,7 +6929,7 @@ function openPuzzle(){
       rubyVisible = true;
       if(window.firstDoor){
         window.firstDoor.active = false;
-        if(window.firstDoor.mesh) window.firstDoor.mesh.position.y = 8.8;
+        if(window.firstDoor.mesh && !doorCinematicActive) window.firstDoor.mesh.position.y = 8.8;
       }
       if(window.firstDoorLabel) window.firstDoorLabel.position.y = 8.8;
       if(window.firstDoorBlocker) window.firstDoorBlocker.active = false;
@@ -8438,4 +8441,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-  </html>
+                                       </html>
