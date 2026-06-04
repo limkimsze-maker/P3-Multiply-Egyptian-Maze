@@ -3374,6 +3374,7 @@ const wrap = document.getElementById("gameWrap");
     let doorCinematicActive = false;
     let pendingFloorRestoreAfterDoorView = false;
     let firstDoorAutoOpenScheduled = false;
+    let firstDoorOpeningInProgress = false;
     var TORCH_TOTAL = 6;
 
     const DOOR_OPEN_SOUND_URL = "https://raw.githubusercontent.com/limkimsze-maker/P3-Uncle-Joe-and-the-Key-of-Product/976802ad774b985452e6b06c9945e6378bcd1822/krnbeatz-tectonic-passage-418836.mp3";
@@ -3595,14 +3596,19 @@ const wrap = document.getElementById("gameWrap");
         onComplete
       } = opts;
 
+      // Mark cinematic immediately. Do not wait for requestAnimationFrame.
+      // This prevents Ruby/door helpers from forcing the door fully open before pupils see it move.
+      doorCinematicActive = true;
+
       if(!door || !door.mesh){
         if(blocker) blocker.active = false;
+        doorCinematicActive = false;
+        firstDoorOpeningInProgress = false;
         if(typeof onComplete === "function") onComplete();
         return;
       }
 
       startDoorSceneAfter3DStable(()=>{
-        doorCinematicActive = true;
         pendingFloorRestoreAfterDoorView = false;
         door.active = false;
         if(blocker) blocker.active = false;
@@ -3650,6 +3656,7 @@ const wrap = document.getElementById("gameWrap");
             if(blocker) blocker.active = false;
             syncDoorBlockers();
             doorCinematicActive = false;
+            if(door === window.firstDoor) firstDoorOpeningInProgress = false;
 
             const r = opts.restoreAfterOpen;
             if(r){
@@ -6896,7 +6903,7 @@ function openPuzzle(){
       // until the pupil actually taps "Collect Ruby of Product".
       // Do NOT run during the door-opening cinematic, or it will force the door fully open
       // and pupils will not see the gradual opening.
-      if(doorCinematicActive) return;
+      if(doorCinematicActive || firstDoorOpeningInProgress) return;
       if(!doorOpen || rubyCollected || !window.rubyObj) return;
 
       rubyVisible = true;
@@ -6964,6 +6971,7 @@ function openPuzzle(){
 
 
     function firstDoorPostOpenWatchdog(){
+      if(firstDoorOpeningInProgress || doorCinematicActive) return;
       if(!doorOpen || !window.firstDoor || !window.rubyObj) return;
       refreshVisualStateBeforeRubyCollection();
       if(camera.position.z > -6.2 || camera.position.z < -7.7){
@@ -6975,6 +6983,7 @@ function openPuzzle(){
 
     function openDoor(){
       if(doorOpen) return;
+      firstDoorOpeningInProgress = true;
       doorOpen = true;
       if(window.firstDoorBlocker) window.firstDoorBlocker.active = false;
       syncDoorBlockers();
@@ -6983,15 +6992,17 @@ function openPuzzle(){
         door: window.firstDoor,
         blocker: window.firstDoorBlocker,
         doorZ: -7.72,
-        cameraZ: -3.0,
+        cameraZ: -2.6,
+        viewX: 0,
         restoreAfterOpen: {x:0, z:-6.9, ry:0},
         message: "Watch carefully... the door is opening!",
         onComplete: ()=>{
+          firstDoorOpeningInProgress = false;
           rubyVisible = true;
           refreshVisualStateBeforeRubyCollection();
           ensureRubyVisibleBeforeCollected();
           setPlayerFloorView(0,-6.9,0);
-          showMessage("Starting Chamber cleared! You are back at floor level. Collect the Ruby of Product.");
+          showMessage("Door opened. Ruby of Product has appeared. Collect the Ruby of Product.");
           setTimeout(firstDoorPostOpenWatchdog,120);
           setTimeout(firstDoorPostOpenWatchdog,520);
           setTimeout(firstDoorPostOpenWatchdog,1200);
@@ -8441,4 +8452,4 @@ function openPuzzle(){
   })();
   </script>
 </body>
-                                       </html>
+  </html>
