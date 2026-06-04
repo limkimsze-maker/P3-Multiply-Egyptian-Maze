@@ -3765,6 +3765,8 @@ const wrap = document.getElementById("gameWrap");
       });
       updateTorchGalleryProgression();
       updateTorchHud();
+      ensureTopazVisibleBeforeCollected?.();
+      ensureScarabObjectsVisible?.();
 
       scarabLightedCount = scarabChallengeDone.size;
       scarabs.forEach((obj)=>{
@@ -4259,27 +4261,86 @@ const wrap = document.getElementById("gameWrap");
 
     function addTopaz(){
       const group = new THREE.Group();
-      group.position.set(0,1.05,-31.5);
+      group.position.set(0,1.35,-23.6);
       group.visible = false;
-      const topaz = new THREE.Mesh(new THREE.OctahedronGeometry(.62,0), new THREE.MeshStandardMaterial({
+      group.scale.set(1.55,1.55,1.55);
+
+      const topazMat = new THREE.MeshStandardMaterial({
         color:0xffc247,
-        roughness:.18,
-        metalness:.15,
+        roughness:.16,
+        metalness:.16,
         emissive:0xff9a00,
-        emissiveIntensity:1.0
-      }));
+        emissiveIntensity:1.35
+      });
+
+      const topaz = new THREE.Mesh(new THREE.OctahedronGeometry(.76,0), topazMat);
+      topaz.position.set(0,.05,0);
       topaz.castShadow = !LOW_POWER;
       group.add(topaz);
-      const halo = new THREE.Mesh(new THREE.TorusGeometry(.78,.025,10,40), new THREE.MeshStandardMaterial({color:0xffe28a,emissive:0xffb833,emissiveIntensity:.9,roughness:.25}));
+
+      const core = new THREE.Mesh(
+        new THREE.OctahedronGeometry(.42,0),
+        new THREE.MeshBasicMaterial({color:0xfff0a3,transparent:true,opacity:.72})
+      );
+      core.position.set(0,.05,.03);
+      group.add(core);
+
+      const halo = new THREE.Mesh(
+        new THREE.TorusGeometry(1.0,.04,14,72),
+        new THREE.MeshStandardMaterial({
+          color:0xffe28a,
+          emissive:0xffb833,
+          emissiveIntensity:1.05,
+          roughness:.25,
+          transparent:true,
+          opacity:.95
+        })
+      );
       halo.rotation.x = Math.PI/2;
       group.add(halo);
-      const light = new THREE.PointLight(0xffb833, LOW_POWER ? 1.8 : 2.4, 8, 1.5);
-      light.position.set(0,.35,0);
+
+      const labelCanvas = document.createElement("canvas");
+      labelCanvas.width = 560;
+      labelCanvas.height = 130;
+      const ctx = labelCanvas.getContext("2d");
+      ctx.fillStyle = "#2a1305";
+      ctx.fillRect(0,0,560,130);
+      ctx.strokeStyle = "#ffd86b";
+      ctx.lineWidth = 9;
+      ctx.strokeRect(12,12,536,106);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff0a8";
+      ctx.font = "bold 34px Georgia,serif";
+      ctx.fillText("TOPAZ OF TENS",280,66);
+      const tex = new THREE.CanvasTexture(labelCanvas);
+      if(THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      const label = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.25,.54),
+        new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false})
+      );
+      label.position.set(0,1.35,.18);
+      group.add(label);
+
+      const light = new THREE.PointLight(0xffb833, LOW_POWER ? 4.2 : 5.8, 15, 1.25);
+      light.position.set(0,.65,.25);
       group.add(light);
+
       scene.add(group);
-      const obj = {id:"topaz",group,position:new THREE.Vector3(0,1.05,-31.5),radius:2.6,label:"Collect Topaz of Tens"};
+      const obj = {
+        id:"topaz",
+        group,
+        position:new THREE.Vector3(0,1.35,-23.6),
+        radius:7.0,
+        label:"Collect Topaz of Tens",
+        topaz,
+        core,
+        halo,
+        light,
+        labelMesh:label
+      };
       interactables.push(obj);
-      animated.push({type:"ruby",group,ruby:topaz,halo,light,t:0});
+      animated.push({type:"topazGem",group,topaz,core,halo,light,t:0});
       return obj;
     }
 
@@ -6620,8 +6681,50 @@ function addTablet(){
       return null;
     }
 
+
+    function ensureTopazVisibleBeforeCollected(){
+      // Restore Topaz visibility after Chamber 2 is completed. Do not auto-collect it.
+      if(!window.secondDoorOpen || topazCollected || !window.topazObj) return;
+      topazVisible = true;
+      window.topazObj.group.visible = true;
+      window.topazObj.group.position.set(0,1.35,-23.6);
+      window.topazObj.group.scale.set(1.55,1.55,1.55);
+      window.topazObj.position.set(0,1.35,-23.6);
+      window.topazObj.radius = 7.0;
+      if(window.topazObj.topaz) window.topazObj.topaz.visible = true;
+      if(window.topazObj.core) window.topazObj.core.visible = true;
+      if(window.topazObj.halo) window.topazObj.halo.visible = true;
+      if(window.topazObj.light) window.topazObj.light.intensity = LOW_POWER ? 4.2 : 5.8;
+    }
+
+    function ensureScarabObjectsVisible(){
+      // Visual-only restore. Questions remain locked by canAccessScarabQuestions().
+      scarabs.forEach((s)=>{
+        if(!s || !s.group) return;
+        const done = scarabChallengeDone.has(s.idx);
+        if(!done && !emeraldCollected){
+          s.group.visible = true;
+          s.group.scale.set(1.18,1.18,1.18);
+          if(s.body) s.body.visible = true;
+          if(s.pad) s.pad.visible = true;
+          if(s.padRing) s.padRing.visible = true;
+          if(s.num) s.num.visible = true;
+          if(s.glow) s.glow.intensity = LOW_POWER ? 1.2 : 1.7;
+          s.group.traverse((child)=>{
+            if(child.isMesh){
+              child.visible = true;
+              child.renderOrder = Math.max(child.renderOrder || 0, 35);
+              if(child.material) child.material.needsUpdate = true;
+            }
+          });
+        }
+      });
+    }
+
     function updateInteraction(){
       ensureRubyVisibleBeforeCollected();
+      ensureTopazVisibleBeforeCollected();
+      ensureScarabObjectsVisible();
       updateScarabPromptVisuals();
       currentTarget = null;
       let nearest = Infinity;
@@ -7081,7 +7184,8 @@ function openPuzzle(){
         message: "All 6 torches are lit. Watch the door open!",
         onComplete: ()=>{
           topazVisible = true;
-          if(window.topazObj) window.topazObj.group.visible = true;
+          ensureTopazVisibleBeforeCollected();
+          ensureScarabObjectsVisible();
           showMessage("The second door is open. Collect the Topaz of Tens.");
           saveProgress();
         }
@@ -7487,6 +7591,24 @@ function openPuzzle(){
           if(a.shaft){ a.shaft.rotation.z = Math.sin(elapsed*2.0)*.05; }
           if(a.halo) a.halo.rotation.z += dt*1.2;
           if(a.light) a.light.intensity = 2.8 + Math.sin(elapsed*3.2)*.4;
+        }
+        if(a.type==="topazGem" && a.group.visible){
+          a.group.position.y = 1.35 + Math.sin(elapsed*2)*.12;
+          if(a.topaz){
+            a.topaz.visible = true;
+            a.topaz.rotation.y += dt*1.45;
+            a.topaz.rotation.x += dt*.58;
+          }
+          if(a.core){
+            a.core.visible = true;
+            a.core.rotation.y -= dt*1.8;
+            a.core.rotation.x += dt*.75;
+          }
+          if(a.halo){
+            a.halo.visible = true;
+            a.halo.rotation.z += dt*1.05;
+          }
+          if(a.light) a.light.intensity = (LOW_POWER ? 4.2 : 5.8) + Math.sin(elapsed*4)*.55;
         }
         if(a.type==="ruby" && a.group.visible){
           a.group.position.y = 1.35 + Math.sin(elapsed*2)*.12;
