@@ -3829,6 +3829,21 @@ const wrap = document.getElementById("gameWrap");
         }
       });
 
+      if(window.topazVisualBackup && window.topazVisualBackup.group.visible){
+        const b = window.topazVisualBackup;
+        b.group.position.y = 1.45 + Math.sin(elapsed*2.1)*.10;
+        if(b.gem){ b.gem.rotation.y += dt*1.45; b.gem.rotation.x += dt*.58; }
+        if(b.halo) b.halo.rotation.z += dt*1.1;
+      }
+      if(window.scarabVisualBackups){
+        window.scarabVisualBackups.forEach((g,idx)=>{
+          if(g && g.visible){
+            g.position.y = 1.05 + Math.sin(elapsed*2.4 + idx)*.07;
+            g.rotation.y += dt*.32;
+          }
+        });
+      }
+
       if(finalEscapeStarted && window.finalExitScene){
         window.finalExitScene.glow.visible = true;
         window.finalExitScene.forest.visible = true;
@@ -6282,6 +6297,200 @@ function addTablet(){
     }
 
 
+
+    function makeScarabVisualStandIn(idx,x,z){
+      // Visual-only backup scarab. It is not an interactable and does not change gameplay.
+      const g = new THREE.Group();
+      g.position.set(x,1.05,z);
+      g.visible = true;
+
+      const pad = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.02,1.08,.10,36),
+        new THREE.MeshBasicMaterial({color:0x14532d,side:THREE.DoubleSide})
+      );
+      pad.position.y = -.58;
+      pad.renderOrder = 310;
+      g.add(pad);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1.08,.055,12,72),
+        new THREE.MeshBasicMaterial({color:0xfff7ad,transparent:true,opacity:.95,depthWrite:false})
+      );
+      ring.rotation.x = Math.PI/2;
+      ring.position.y = -.50;
+      ring.renderOrder = 311;
+      g.add(ring);
+
+      const body = new THREE.Mesh(
+        new THREE.SphereGeometry(.55,24,16),
+        new THREE.MeshBasicMaterial({color:0x22c55e})
+      );
+      body.scale.set(1.35,.42,.92);
+      body.position.y = .05;
+      body.renderOrder = 312;
+      g.add(body);
+
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(.25,18,12),
+        new THREE.MeshBasicMaterial({color:0x052e16})
+      );
+      head.position.set(0,.05,.55);
+      head.scale.set(1,.68,.9);
+      head.renderOrder = 313;
+      g.add(head);
+
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(.045,.06,.82),
+        new THREE.MeshBasicMaterial({color:0x052e16})
+      );
+      stripe.position.set(0,.29,0);
+      stripe.renderOrder = 314;
+      g.add(stripe);
+
+      for(const side of [-1,1]){
+        for(let i=0;i<3;i++){
+          const leg = new THREE.Mesh(
+            new THREE.BoxGeometry(.56,.045,.07),
+            new THREE.MeshBasicMaterial({color:0x052e16})
+          );
+          leg.position.set(side*(.52+.06*i),-.08,.30-i*.28);
+          leg.rotation.y = side*(.35+.12*i);
+          leg.renderOrder = 313;
+          g.add(leg);
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0,0,256,256);
+      ctx.fillStyle = "#2a1305";
+      ctx.beginPath();
+      ctx.arc(128,128,88,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = "#ffd86b";
+      ctx.lineWidth = 14;
+      ctx.stroke();
+      ctx.fillStyle = "#fff0a8";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 112px Georgia,serif";
+      ctx.fillText(String(idx+1),128,136);
+      const tex = new THREE.CanvasTexture(canvas);
+      if(THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      const num = new THREE.Mesh(
+        new THREE.PlaneGeometry(.95,.95),
+        new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false})
+      );
+      num.position.set(0,1.05,.12);
+      num.renderOrder = 330;
+      g.add(num);
+
+      const light = new THREE.PointLight(0x22c55e, LOW_POWER ? 1.6 : 2.4, 7, 1.4);
+      light.position.set(0,.8,.2);
+      g.add(light);
+
+      scene.add(g);
+      return g;
+    }
+
+    function addScarabVisualBackups(){
+      const positions = [
+        [-4.2,-25.2],
+        [0,-25.8],
+        [4.2,-25.2],
+        [-4.5,-30.0],
+        [0,-31.0],
+        [4.5,-30.0]
+      ];
+      window.scarabVisualBackups = positions.map((p,idx)=>makeScarabVisualStandIn(idx,p[0],p[1]));
+    }
+
+    function syncScarabVisualBackups(){
+      if(!window.scarabVisualBackups) return;
+      window.scarabVisualBackups.forEach((g,idx)=>{
+        if(!g) return;
+        const done = scarabChallengeDone.has(idx);
+        g.visible = !done && !emeraldCollected;
+        g.traverse((child)=>{
+          if(child.isMesh){
+            child.visible = g.visible;
+            child.renderOrder = Math.max(child.renderOrder || 0, 310);
+            if(child.material) child.material.needsUpdate = true;
+          }
+        });
+      });
+    }
+
+    function addTopazVisualBackup(){
+      if(window.topazVisualBackup) return window.topazVisualBackup;
+      const g = new THREE.Group();
+      g.position.set(0,1.45,-23.6);
+      g.visible = false;
+
+      const gem = new THREE.Mesh(
+        new THREE.OctahedronGeometry(.82,0),
+        new THREE.MeshBasicMaterial({color:0xffc247})
+      );
+      gem.renderOrder = 340;
+      g.add(gem);
+
+      const halo = new THREE.Mesh(
+        new THREE.TorusGeometry(1.08,.05,14,76),
+        new THREE.MeshBasicMaterial({color:0xffe28a,transparent:true,opacity:.96,depthWrite:false})
+      );
+      halo.rotation.x = Math.PI/2;
+      halo.renderOrder = 341;
+      g.add(halo);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 560;
+      canvas.height = 130;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#2a1305";
+      ctx.fillRect(0,0,560,130);
+      ctx.strokeStyle = "#ffd86b";
+      ctx.lineWidth = 9;
+      ctx.strokeRect(12,12,536,106);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff0a8";
+      ctx.font = "bold 34px Georgia,serif";
+      ctx.fillText("TOPAZ OF TENS",280,66);
+      const tex = new THREE.CanvasTexture(canvas);
+      if(THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      const label = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.25,.54),
+        new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false})
+      );
+      label.position.set(0,1.25,.2);
+      label.renderOrder = 342;
+      g.add(label);
+
+      const light = new THREE.PointLight(0xffb833, LOW_POWER ? 4.2 : 5.8, 15, 1.25);
+      light.position.set(0,.65,.25);
+      g.add(light);
+
+      scene.add(g);
+      window.topazVisualBackup = {group:g,gem,halo,label,light};
+      return window.topazVisualBackup;
+    }
+
+    function syncTopazVisualBackup(){
+      if(!window.topazVisualBackup) addTopazVisualBackup();
+      if(!window.topazVisualBackup) return;
+      const shouldShow = !!(window.secondDoorOpen && topazVisible && !topazCollected);
+      const b = window.topazVisualBackup;
+      b.group.visible = shouldShow;
+      b.group.position.set(0,1.45,-23.6);
+      if(b.gem) b.gem.visible = shouldShow;
+      if(b.halo) b.halo.visible = shouldShow;
+      if(b.label) b.label.visible = shouldShow;
+      if(b.light) b.light.intensity = shouldShow ? (LOW_POWER ? 4.2 : 5.8) : 0;
+    }
+
+
     function buildWorld(){
       addAmbient();
       // Bright chambers; Torch Corridor remains deliberately dark.
@@ -6468,6 +6677,8 @@ function addTablet(){
       addWall(0,-98.5,15,19,.22,matBlack,false).mesh.position.y = 3.52;
 
       addGuaranteedBrightNonTorchChambers();
+      addScarabVisualBackups();
+      addTopazVisualBackup();
     }
     buildWorld();
     applySavedProgress();
@@ -6683,6 +6894,7 @@ function addTablet(){
 
 
     function ensureTopazVisibleBeforeCollected(){
+      syncTopazVisualBackup();
       // Restore Topaz visibility after Chamber 2 is completed. Do not auto-collect it.
       if(!window.secondDoorOpen || topazCollected || !window.topazObj) return;
       topazVisible = true;
@@ -6698,6 +6910,7 @@ function addTablet(){
     }
 
     function ensureScarabObjectsVisible(){
+      syncScarabVisualBackups();
       // Visual-only restore. Questions remain locked by canAccessScarabQuestions().
       scarabs.forEach((s)=>{
         if(!s || !s.group) return;
@@ -7376,6 +7589,7 @@ function openPuzzle(){
       playVictory();
       burstConfetti(true);
       window.topazObj.group.visible = false;
+      if(window.topazVisualBackup) window.topazVisualBackup.group.visible = false;
       applyProgressVisuals();
       saveProgress();
     }
